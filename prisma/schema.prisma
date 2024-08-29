@@ -25,14 +25,35 @@ model User {
   updatedAt     DateTime  @updatedAt
   // relations
   screens       Screen[]
+  App           App[]
 }
 
 model Screen {
   id          String   @id @default(uuid())
   name        String
+  description String?
+  tags        String?
   slug        String
   uri         String
-  isApproved  String
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // relations
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  App           App[]
+}
+
+model App {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  tags        String?
+  slug        String
+  screen      Screen? @relation(fields: [screenId], references: [id])
+  screenId    String?
+  isApproved  Boolean  @default(false)
+  isPublished  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   // relations
