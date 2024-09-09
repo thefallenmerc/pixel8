@@ -3,7 +3,7 @@
 import React, { FormEvent, useEffect, useState } from "react";
 // import { validateEmail } from "@/lib/utils";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/router";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function LoginPage() {
     const [email, setEmail] = useState("");
@@ -12,6 +12,9 @@ function LoginPage() {
     const [emailInPutError, setEmailInputError] = useState(false);
     const [passwordInPutError, setPasswordInputError] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         validate();
@@ -28,7 +31,8 @@ function LoginPage() {
 
         if (res?.ok) {
             // toast success
-            console.log("success");
+            const origin = searchParams.get("origin") || "/";
+            router.push(origin);
             return;
         } else {
             // Toast failed
@@ -96,7 +100,7 @@ function LoginPage() {
                         }}
                     />
                     <p className="text-red-500 text-xs italic">
-                        Please choose a password.
+                        {error}
                     </p>
                 </div>
                 <div className="flex items-center justify-between">

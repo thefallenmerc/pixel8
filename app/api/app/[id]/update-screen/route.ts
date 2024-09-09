@@ -29,7 +29,19 @@ export const POST = async (req: NextRequest, context: any) => {
         },
         data: {
             screenId: screenId ? screenId : null,
+        },
+        include: {
+            screen: true
         }
+    });
+
+    // call socket endpoint
+    await fetch("http://192.168.11.207:5000/emit-event", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ eventName: "app-updated", data: updatedApp }),
     });
 
     return response.status200(updatedApp);

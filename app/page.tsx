@@ -22,9 +22,13 @@ export default function Home() {
 
       <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
         <SubappLink
-          label="Screen"
+          label="My Apps"
+          description="List of all app by me"
+          link="/app/my" />
+        <SubappLink
+          label="My Screen"
           description="Find in-depth information about Next.js features and API."
-          link="/screen" />
+          link="/screen/my" />
       </div>
     </main>
   );

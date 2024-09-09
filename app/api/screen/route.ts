@@ -41,11 +41,20 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         );
 
         // get additional data from the form
+        const slug = formData.get("slug") as string;
+        const name = formData.get("name") as string;
+        const description = formData.get("description") as string;
+        const fitType = formData.get("fitType") as string;
+        const referenceUrl = formData.get("referenceUrl") as string;
+        const isPortrait = Boolean(formData.get("isPortrait") as string);
         const data = {
-            name: formData.get("name") as string,
-            description: formData.get("description") as string,
-            slug: formData.get("slug") as string,
+            name: name || getNameFromSlug(slug),
+            description: description || name || getNameFromSlug(slug),
+            slug,
             uri,
+            fitType,
+            referenceUrl,
+            isPortrait,
             createdById: formData.get("createdById") as string,
         };
 
@@ -62,3 +71,8 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         return response.status500({ message: "Failed" });
     }
 };
+
+function getNameFromSlug(slug: string) {
+    // replace - with splaces and capitalize
+    return slug.replaceAll("-", " ").split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}

@@ -29,19 +29,23 @@ model User {
 }
 
 model Screen {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  tags        String?
-  slug        String
-  uri         String
-  isApproved  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  tags         String?
+  slug         String
+  uri          String
+  fitType      String?  @default("cover")
+  isApproved   Boolean  @default(false)
+  isSensitive  Boolean  @default(false)
+  isPortrait   Boolean  @default(false)
+  referenceUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   // relations
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdById String
-  App           App[]
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdById  String
+  App          App[]
 }
 
 model App {
@@ -50,10 +54,10 @@ model App {
   description String?
   tags        String?
   slug        String
-  screen      Screen? @relation(fields: [screenId], references: [id])
+  screen      Screen?  @relation(fields: [screenId], references: [id])
   screenId    String?
   isApproved  Boolean  @default(false)
-  isPublished  Boolean  @default(false)
+  isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   // relations
