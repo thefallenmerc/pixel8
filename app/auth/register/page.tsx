@@ -5,13 +5,28 @@ import React, { FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+// form related
+import { z } from "zod"
+import { FieldValues, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod"
+// ui components
+import { Button } from "@/components/ui/button"
 import { Form, getFormSchemaFromFields } from "@/client/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { z } from "zod";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+} from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast";
 
 const formFields = {
+    name: {
+        label: "Name",
+        placeholder: "Enter your name",
+        defaultValue: "",
+        validation: z.string().min(2).max(50),
+    },
     email: {
         label: "Email",
         placeholder: "Enter your email",
@@ -26,74 +41,69 @@ const formFields = {
     },
 };
 
-function LoginPage() {
+function RegisterPage() {
+
+    // states
     const [isLoading, setIsLoading] = useState(false);
 
+    // get the referrer to redirect back
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
     const origin = searchParams.get("origin");
 
-
     const formSchema = getFormSchemaFromFields(formFields);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        const { email, password } = values;
-        // call next auth
-        let res = await signIn("credentials", {
-            email,
-            password,
-            callbackUrl: `/`,
-            redirect: false,
+        // call api
+        const response = await fetch('/api/user/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(values),
         });
 
-        if (res?.ok) {
+        if (response.ok) {
             // toast success
             router.push(origin || "/");
             return;
         } else {
             // Toast failed
             toast({
-                title: "Credentials incorrect.",
+                title: "Failed! Check you input and try again.",
                 variant: "destructive",
             });
             // return;
-            console.log("Failed", res);
+            console.log("Failed", response);
         }
-        return res;
     }
 
     return (
         <Card className="md:w-[400px] w-full">
             <CardContent>
                 <div className="pt-6 pb-2">
-                    <div className="font-semibold tracking-tight text-2xl">Login</div>
-                    <CardDescription>Enter your credentials to resume your journey</CardDescription>
+                    <div className="font-semibold tracking-tight text-2xl">Register</div>
+                    <CardDescription>Enter your details to get started</CardDescription>
                 </div>
                 <Form
                     fields={formFields}
                     onSubmit={onSubmit}
-                    submitLabel="Login"
+                    submitLabel="Register"
                     additionalCTAElement={(
                         <>
                             <div className="px-2">or</div>
                             <Button variant="secondary" onClick={() => {
-                                router.push("/auth/register" + (origin ? `?origin=${origin}` : ""));
+                                router.push("/auth/login" + (origin ? `?origin=${origin}` : ""));
                             }} type="button">
-                                Register
+                                Login
                             </Button>
                         </>
                     )}
                 />
-                {/* forgot password button */}
-                <div className="pt-4">
-                    <Link href={
-                        "/auth/forgot-password" + (origin ? `?origin=${origin}` : "")
-                    } className="block text-sm text-foreground/60 hover:underline">Forgot password?</Link>
-                </div>
             </CardContent>
         </Card>
     );
 }
 
-export default LoginPage;
+export default RegisterPage;

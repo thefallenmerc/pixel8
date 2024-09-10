@@ -56,7 +56,13 @@ export default function MyAppDetailPageClientComponent({
                         <div className="flex gap-2 py-2">
                             {
                                 app?.tags?.split(",").map((tag) => {
-                                    return <div className="text-slate-500 bg-slate-50 px-4 py-2 rounded text-xs">{tag}</div>
+                                    return (
+                                        <div
+                                            key={tag}
+                                            className="text-slate-500 bg-slate-50 px-4 py-2 rounded text-xs">
+                                            {tag}
+                                        </div>
+                                    )
                                 }) ?? <>No tags</>
                             }
                         </div>
