@@ -69,9 +69,10 @@ function RegisterPage() {
             router.push(origin || "/");
             return;
         } else {
+            const data = await response.json();
             // Toast failed
             toast({
-                title: "Failed! Check you input and try again.",
+                title: data.message ?? "Failed! Check you input and try again.",
                 variant: "destructive",
             });
             // return;
