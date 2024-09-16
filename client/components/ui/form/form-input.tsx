@@ -2,17 +2,26 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessa
 import { Input } from '@/components/ui/input';
 import React from 'react';
 import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
+import { SelectInput } from '../input/select';
+import { Select } from '@/components/ui/select';
+
+export type InputType = "input" | "select";
+
 
 export function FormInput<T extends FieldValues>({
     form,
     name,
     label,
+    type,
+    options,
     placeholder,
     description,
 }: {
     form: UseFormReturn<T>,
     name: Path<T>,
     label?: string,
+    type?: string,
+    options?: { value: string, label: string }[],
     placeholder?: string,
     description?: string,
 }) {
@@ -28,7 +37,20 @@ export function FormInput<T extends FieldValues>({
                         ) : <></>
                     }
                     <FormControl>
-                        <Input placeholder={placeholder ?? ""} {...field} />
+                        {
+                            type === "select" ? (
+                                <SelectInput
+                                    placeholder={placeholder ?? ""}
+                                    options={options}
+                                    {...field}
+                                    onValueChange={field.onChange}
+                                />
+                            ) : (
+                                <Input
+                                    placeholder={placeholder ?? ""}
+                                    {...field} />
+                            )
+                        }
                     </FormControl>
                     {
                         description ? (

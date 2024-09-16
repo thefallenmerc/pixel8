@@ -26,6 +26,7 @@ model User {
   // relations
   screens       Screen[]
   App           App[]
+  decks         Deck[]
 }
 
 model Screen {
@@ -63,4 +64,32 @@ model App {
   // relations
   createdBy   User     @relation(fields: [createdById], references: [id])
   createdById String
+}
+
+model Deck {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  slug          String
+  serverAddress String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  // relations
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdById   String
+  tiles         Tile[]
+}
+
+model Tile {
+  id          String   @id @default(uuid())
+  name        String
+  icon        String?
+  description String?
+  type        String // can be get-api, launch-app or something
+  command     String? // url incase of get api
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // relations
+  deck        Deck     @relation(fields: [deckId], references: [id])
+  deckId      String
 }

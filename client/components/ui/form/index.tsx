@@ -7,9 +7,12 @@ import { FormInput } from './form-input';
 import { Button } from '@/components/ui/button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { InputType } from 'zlib';
 
 interface FieldConfig {
     label: string,
+    type?: string,
+    options?: { value: string, label: string }[],
     placeholder?: string,
     defaultValue?: string | number | undefined,
     validation: z.ZodSchema,
@@ -52,6 +55,8 @@ export function Form<T extends { [K: string]: FieldConfig }>({
                         label={fields[field].label}
                         placeholder={fields[field].placeholder}
                         name={field as any}
+                        type={(fields[field].type ?? "input")}
+                        options={fields[field].options}
                         form={form} />
                 ))}
                 <div className="flex items-center pt-2">
