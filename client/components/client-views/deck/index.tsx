@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Form, getFormSchemaFromFields } from '../../ui/form';
 import { z } from 'zod';
 
+import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable } from "@dnd-kit/sortable";
+import { CSS } from '@dnd-kit/utilities';
+
 const formFields = {
     name: {
         label: "Name",
@@ -59,6 +63,9 @@ export function DeckView({
             const tiles = await response.json() as TileType[];
             selectedDeckTiles(tiles);
         }
+    }
+
+    const saveNewTileOrder = async (tileIds : string[]) => {
     }
 
     useEffect(() => {
@@ -149,24 +156,20 @@ export function DeckView({
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${!isServerHealthy ? 'bg-red-500' : 'bg-green-500'}`}
                 ></div>
             </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 xl:grid-cols-9 gap-4 py-4">
-                {
-                    deckTiles.map(tile => (
-                        <div
-                            key={tile.id}
-                            className={`aspect-square flex flex-col items-center justify-center border rounded active:border-foreground/40 cursor-pointer`}
-                            onClick={() => { executeTile(tile) }}>
-                            <RadixIcon icon={tile.icon as IconName} size={48} />
-                            <div className="pt-2">{tile.name}</div>
-                        </div>
-                    ))
-                }
-                <div
-                    className={`aspect-square flex flex-col items-center justify-center border rounded active:border-foreground/40 cursor-pointer`}
-                    onClick={() => { setAddTileDialogOpen(true) }}>
-                    <RadixIcon icon="plus" size={48} />
-                    <div className="pt-2">Add new tile</div>
-                </div>
+            <DndContext>
+                <SortableContext items={deckTiles}>
+                    <TileList
+                        key={JSON.stringify(deckTiles)}
+                        initialTiles={deckTiles}
+                        executeTile={executeTile}
+                        onTileOrderChange={saveNewTileOrder} />
+                </SortableContext>
+            </DndContext>
+            <div
+                className={`flex items-center justify-center border rounded active:border-foreground/40 cursor-pointer`}
+                onClick={() => { setAddTileDialogOpen(true) }}>
+                <RadixIcon icon="plus" size={24} />
+                <div className="p-2">Add new tile</div>
             </div>
             <Dialog
                 open={addTileDialogOpen}
@@ -182,3 +185,114 @@ export function DeckView({
         </div>
     )
 }
+
+// Individual sortable tile component
+const SortableTile = ({ tile, executeTile }: {
+    tile: TileType,
+    executeTile: (tile: TileType) => void
+}) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: tile.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        padding: '16px',
+        margin: '0 0 8px 0',
+        backgroundColor: '#f4f4f4',
+        border: '1px solid #ccc',
+    };
+
+    return (
+        <div ref={setNodeRef} style={{
+            touchAction: "none",
+            ...style,
+        }} {...attributes} {...listeners}
+            className={`aspect-square flex flex-col items-center justify-center border rounded active:border-foreground/40 cursor-pointer`}
+            onClick={() => { executeTile(tile) }}>
+            <RadixIcon icon={tile.icon as IconName} size={48} />
+            <div className="pt-2 text-nowrap whitespace-nowrap overflow-hidden w-full text-ellipsis">{tile.name}</div>
+        </div>
+    );
+};
+
+const TileList = ({
+    initialTiles,
+    executeTile,
+    onTileOrderChange,
+}: {
+    initialTiles: TileType[],
+    executeTile: (tile: TileType) => void,
+    onTileOrderChange?: (tileIds: string[]) => void
+}) => {
+    const [tiles, setTiles] = useState(initialTiles);
+    const [persistedTileIds, setPersistedTileIds] = useState<string[]>([]); // State for persisting tile IDs
+
+    // Use pointer sensor for drag-and-drop
+    const sensors = useSensors(useSensor(PointerSensor, {
+        activationConstraint: {
+            delay: 250, // 250 milliseconds delay for pc devices as well
+            distance: 5,
+        },
+    }), useSensor(TouchSensor, {
+        activationConstraint: {
+            delay: 250, // 250 milliseconds delay for touch devices as well
+            distance: 5,
+        },
+    }));
+
+    // Handle reordering of tiles
+    const handleDragEnd = (event: any) => {
+        const { active, over } = event;
+
+        if (active.id !== over.id) {
+            const oldIndex = tiles.findIndex((tile) => tile.id === active.id);
+            const newIndex = tiles.findIndex((tile) => tile.id === over.id);
+
+            const updatedTiles = arrayMove(tiles, oldIndex, newIndex);
+            setTiles(updatedTiles); // Update the order of tiles
+        }
+    };
+
+    // Function to persist the tile order by ID
+    const handlePersistOrder = () => {
+        const tileIds = tiles.map((tile) => tile.id); // Extract only tile IDs
+        setPersistedTileIds(tileIds); // Save tile IDs
+        // call the on tile order change function
+        if (onTileOrderChange) {
+            onTileOrderChange(tileIds);
+        }
+    };
+    useEffect(() => {
+        handlePersistOrder();
+    }, [tiles]);
+
+    return (
+        <div>
+            <h2>Reorderable Tiles</h2>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext items={tiles.map((tile) => tile.id)}>
+                    <div className="grid grid-cols-3 md:grid-cols-6 xl:grid-cols-9 gap-4 py-4">
+                        {tiles.map((tile) => (
+                            <SortableTile key={tile.id} tile={tile} executeTile={executeTile} />
+                        ))}
+                    </div>
+                </SortableContext>
+            </DndContext>
+
+            <button onClick={handlePersistOrder} style={{ marginTop: '20px' }}>
+                Persist Tile Order
+            </button>
+
+            <h3>Persisted Tile Order (IDs):</h3>
+            <ul>
+                {persistedTileIds.map((id) => (
+                    <li key={id}>{id}</li>
+                ))}
+            </ul>
+        </div>
+    );
+};
