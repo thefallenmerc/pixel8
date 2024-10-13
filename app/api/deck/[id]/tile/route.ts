@@ -21,6 +21,9 @@ export const GET = async (req: NextRequest, context: any) => {
     const tiles = await prisma.tile.findMany({
         where: {
             deckId: id
+        },
+        orderBy: {
+            order: "asc"
         }
     });
 

@@ -89,6 +89,7 @@ model Tile {
   command     String? // url incase of get api
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  order       Int?     @default(0)
   // relations
   deck        Deck     @relation(fields: [deckId], references: [id])
   deckId      String

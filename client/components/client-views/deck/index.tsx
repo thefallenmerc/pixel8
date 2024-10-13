@@ -54,18 +54,30 @@ export function DeckView({
 
     const [isServerHealthy, setIsServerHealthy] = useState(false);
     const [selectedDeck, setSelectedDeck] = useState<DeckType>(decks[0]);
-    const [deckTiles, selectedDeckTiles] = useState<TileType[]>([]);
+    const [deckTiles, setDeckTiles] = useState<TileType[]>([]);
     const [addTileDialogOpen, setAddTileDialogOpen] = useState(false);
 
     const fetchTiles = async () => {
         if (selectedDeck) {
             const response = await fetch("/api/deck/" + selectedDeck.id + "/tile");
             const tiles = await response.json() as TileType[];
-            selectedDeckTiles(tiles);
+            setDeckTiles(tiles);
         }
     }
 
-    const saveNewTileOrder = async (tileIds : string[]) => {
+    const saveNewTileOrder = async (tiles: TileType[]) => {
+        // call api to save updated order
+        const tileIds = tiles.map(tile => tile.id);
+        const response = await fetch("/api/deck/" + selectedDeck.id + "/tile-order", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(tileIds),
+        });
+        if (response.ok) {
+            // setDeckTiles(tiles);
+        }
     }
 
     useEffect(() => {
@@ -160,7 +172,8 @@ export function DeckView({
                 <SortableContext items={deckTiles}>
                     <TileList
                         key={JSON.stringify(deckTiles)}
-                        initialTiles={deckTiles}
+                        deckTiles={deckTiles}
+                        setDeckTiles={setDeckTiles}
                         executeTile={executeTile}
                         onTileOrderChange={saveNewTileOrder} />
                 </SortableContext>
@@ -216,16 +229,16 @@ const SortableTile = ({ tile, executeTile }: {
 };
 
 const TileList = ({
-    initialTiles,
+    deckTiles,
+    setDeckTiles,
     executeTile,
     onTileOrderChange,
 }: {
-    initialTiles: TileType[],
+    deckTiles: TileType[],
+    setDeckTiles: (tiles: TileType[]) => void,
     executeTile: (tile: TileType) => void,
-    onTileOrderChange?: (tileIds: string[]) => void
+    onTileOrderChange?: (tiles: TileType[]) => void
 }) => {
-    const [tiles, setTiles] = useState(initialTiles);
-    const [persistedTileIds, setPersistedTileIds] = useState<string[]>([]); // State for persisting tile IDs
 
     // Use pointer sensor for drag-and-drop
     const sensors = useSensors(useSensor(PointerSensor, {
@@ -245,54 +258,34 @@ const TileList = ({
         const { active, over } = event;
 
         if (active.id !== over.id) {
-            const oldIndex = tiles.findIndex((tile) => tile.id === active.id);
-            const newIndex = tiles.findIndex((tile) => tile.id === over.id);
+            const oldIndex = deckTiles.findIndex((tile) => tile.id === active.id);
+            const newIndex = deckTiles.findIndex((tile) => tile.id === over.id);
 
-            const updatedTiles = arrayMove(tiles, oldIndex, newIndex);
-            setTiles(updatedTiles); // Update the order of tiles
+            const updatedTiles = arrayMove(deckTiles, oldIndex, newIndex);
+            setDeckTiles(updatedTiles); // Update the order of tiles
+
+            if (onTileOrderChange) {
+                onTileOrderChange(updatedTiles);
+            }
         }
     };
 
-    // Function to persist the tile order by ID
-    const handlePersistOrder = () => {
-        const tileIds = tiles.map((tile) => tile.id); // Extract only tile IDs
-        setPersistedTileIds(tileIds); // Save tile IDs
-        // call the on tile order change function
-        if (onTileOrderChange) {
-            onTileOrderChange(tileIds);
-        }
-    };
-    useEffect(() => {
-        handlePersistOrder();
-    }, [tiles]);
 
     return (
         <div>
-            <h2>Reorderable Tiles</h2>
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
             >
-                <SortableContext items={tiles.map((tile) => tile.id)}>
+                <SortableContext items={deckTiles.map((tile) => tile.id)}>
                     <div className="grid grid-cols-3 md:grid-cols-6 xl:grid-cols-9 gap-4 py-4">
-                        {tiles.map((tile) => (
+                        {deckTiles.map((tile) => (
                             <SortableTile key={tile.id} tile={tile} executeTile={executeTile} />
                         ))}
                     </div>
                 </SortableContext>
             </DndContext>
-
-            <button onClick={handlePersistOrder} style={{ marginTop: '20px' }}>
-                Persist Tile Order
-            </button>
-
-            <h3>Persisted Tile Order (IDs):</h3>
-            <ul>
-                {persistedTileIds.map((id) => (
-                    <li key={id}>{id}</li>
-                ))}
-            </ul>
         </div>
     );
 };
