@@ -13,7 +13,9 @@ export default async function MyAppList() {
 
     const apps = await getAppByCreatedById(session?.token?.sub ?? "");
 
+    const screens = await getScreenByCreatedById(session?.token?.sub ?? "");
+
     return (
-        <MyAppListClientComponent apps={apps} />
+        <MyAppListClientComponent apps={apps} screens={screens} />
     )
 }

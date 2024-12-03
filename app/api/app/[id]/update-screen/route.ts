@@ -36,7 +36,7 @@ export const POST = async (req: NextRequest, context: any) => {
     });
 
     // call socket endpoint
-    await fetch("http://192.168.11.207:5000/emit-event", {
+    await fetch("http://192.168.2.1:5000/emit-event", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

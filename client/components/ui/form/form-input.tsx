@@ -4,6 +4,7 @@ import React from 'react';
 import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
 import { SelectInput } from '../input/select';
 import { Select } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 export type InputType = "input" | "select";
 
@@ -38,17 +39,24 @@ export function FormInput<T extends FieldValues>({
                     }
                     <FormControl>
                         {
-                            type === "select" ? (
-                                <SelectInput
+                            type === "textarea" ? (
+                                <Textarea
                                     placeholder={placeholder ?? ""}
-                                    options={options}
                                     {...field}
-                                    onValueChange={field.onChange}
-                                />
+                                    onChange={field.onChange} />
                             ) : (
-                                <Input
-                                    placeholder={placeholder ?? ""}
-                                    {...field} />
+                                type === "select" ? (
+                                    <SelectInput
+                                        placeholder={placeholder ?? ""}
+                                        options={options}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                    />
+                                ) : (
+                                    <Input
+                                        placeholder={placeholder ?? ""}
+                                        {...field} />
+                                )
                             )
                         }
                     </FormControl>

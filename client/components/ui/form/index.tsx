@@ -60,7 +60,7 @@ export function Form<T extends { [K: string]: FieldConfig }>({
                         form={form} />
                 ))}
                 <div className="flex items-center pt-2">
-                    <Button type="submit">{submitLabel ?? "Submit"}</Button>
+                    <Button className={additionalCTAElement ? "" : "flex-grow"} type="submit">{submitLabel ?? "Submit"}</Button>
                     {additionalCTAElement}
                 </div>
             </form>

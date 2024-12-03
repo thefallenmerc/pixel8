@@ -1,5 +1,6 @@
 import { prisma } from "@/server/lib/prisma";
 import { response } from "@/server/lib/response";
+import { resolveSession } from "@/server/lib/session";
 import { NextRequest } from "next/server";
 
 export const POST = async (req: NextRequest) => {
@@ -9,8 +10,17 @@ export const POST = async (req: NextRequest) => {
         description,
         slug,
         screenId,
-        isPublished,
-        createdById } = await req.json();
+        isPublished } = await req.json();
+
+    // get user session
+    const session = await resolveSession();
+    const userId = session?.token?.sub as string;
+
+    if (!userId) {
+        return response.status401({
+            message: "Unauthenticated"
+        });
+    }
 
     // check if slug already taken
     const existingApp = await prisma.app.findFirst({
@@ -31,7 +41,7 @@ export const POST = async (req: NextRequest) => {
             slug,
             screenId,
             isPublished,
-            createdById
+            createdById: userId,
         }
     });
 

@@ -19,6 +19,9 @@ export async function getAppByCreatedById(createdById: string) {
         include: {
             screen: true,
         },
+        orderBy: {
+            createdAt: 'asc',
+        },
     });
 }
 

@@ -29,7 +29,7 @@ export function Screen({
                             <img src={"/" + screen.uri} alt="Background" className="w-full h-full object-cover blur-md scale-110" />
                         </div>
                         <div className="relative flex justify-center items-center w-screen h-screen">
-                            <img src={"/" + screen.uri} alt="Contained" className="object-contain max-w-full max-h-full" />
+                            <img src={"/" + screen.uri} alt="Contained" className="object-contain max-w-screen max-h-screen" />
                         </div>
                     </div>
                 ) :
