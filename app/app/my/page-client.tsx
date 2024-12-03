@@ -181,9 +181,6 @@ function AppDetails({
                 }
             }
         }}>
-            <SheetTrigger asChild>
-                <Button variant="outline">Open</Button>
-            </SheetTrigger>
             <SheetContent style={{
                 // maxWidth: "100vw"
             }}>
