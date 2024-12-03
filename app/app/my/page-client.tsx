@@ -20,6 +20,7 @@ import { ScreenTypeArray } from '@/types/screen.type';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { FormInput } from '@/client/components/ui/form/form-input';
+import Link from 'next/link';
 
 const filterSensitive = false;
 
@@ -213,7 +214,12 @@ function AppDetails({
                                 <Label className="text-right">
                                     Slug
                                 </Label>
-                                <div className="text-blue-500 underline col-span-3">{selectedApp?.slug}</div>
+                                <Link
+                                    className="text-blue-500 underline col-span-3"
+                                    href={`/app/${selectedApp?.slug}`}
+                                    target='_blank'>
+                                    {selectedApp?.slug}
+                                </Link>
                             </div>
 
                             {/* tags */}
