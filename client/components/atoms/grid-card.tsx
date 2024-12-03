@@ -23,7 +23,6 @@ export function GridCard(props: Props) {
     const [accentColor, setAccentColor] = useState<string>("#ffffff")
     const [textColor, setTextColor] = useState<string>('#000000')
 
-    // extract dominant color
 
     useEffect(() => {
         if (props.imgUrl && imageRef.current) {
@@ -80,16 +79,16 @@ export function GridCard(props: Props) {
     return (
         <div
             onClick={props.onClick}
-            className={`overflow-hidden rounded-xl shadow-md shadow-slate-200 ${props.onClick ? "cursor-pointer" : ""} ${props.isSelected ? "border-sky-500" : ""} border-2`} style={{
+            className={`grid-card group overflow-hidden relative rounded-xl shadow-md shadow-slate-200 ${props.onClick ? "cursor-pointer" : ""} ${props.isSelected ? "border-sky-500" : ""} border-2`} style={{
                 backgroundColor: accentColor,
-                color: textColor
+                color: "#fff"
             }}>
             <figure>
                 <img
                     ref={imageRef}
                     src={props.imgUrl}
                     alt="card image"
-                    className={`aspect-video w-full ${props.isSensitive ? "blur-sm hover:blur-none transition-all" : ""}`}
+                    className={`aspect-video w-full transform-gpu transition-transform duration-300 ease-in-out group-hover:scale-110 ${props.isSensitive ? "blur-sm hover:blur-none transition-all" : ""}`}
                     onClick={e => {
                         if (props.onImgClick) {
                             e.stopPropagation();
@@ -97,12 +96,16 @@ export function GridCard(props: Props) {
                         }
                     }}
                 />
-                <div className="p-6">
-                    <header className="">
-                        <h3 className="text-xl font-medium">
+                <div className={`
+                    p-2 absolute w-full
+                    bottom-0 right-0 flex flex-col
+                    items-end rounded-xl
+                    transform-gpu transition-all duration-300
+                    opacity-50 group-hover:opacity-100`}>
+                    <header className="max-w-full">
+                        <h3 className="truncate">
                             {props.title}
                         </h3>
-                        <p className="text-sm">{props.subtitle}</p>
                     </header>
                 </div>
             </figure>

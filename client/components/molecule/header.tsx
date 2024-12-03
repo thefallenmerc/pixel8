@@ -2,6 +2,7 @@
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import React from 'react';
+import ThemeToggle from './theme-toggle';
 
 export function DashboardHeader() {
     return (
@@ -18,6 +19,8 @@ export function DashboardHeader() {
                     <div onClick={() => {
                         signOut();
                     }} className="transition-colors hover:text-foreground/80 text-red-500 text-xs cursor-pointer">Signout</div>
+                    {/* dark mode toggle */}
+                    <ThemeToggle />
                 </div>
             </div>
         </div>
