@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/server/context/theme.context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Pixel8",
+  title: "Pixel8 - Pixel Fantasies",
   description: "For all your pixel fantasies",
 };
 
