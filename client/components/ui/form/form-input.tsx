@@ -5,6 +5,7 @@ import { FieldValues, UseFormReturn, Path } from 'react-hook-form';
 import { SelectInput } from '../input/select';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { TagInput } from '@/components/custom/tag-input';
 
 export type InputType = "input" | "select";
 
@@ -13,18 +14,22 @@ export function FormInput<T extends FieldValues>({
     form,
     name,
     label,
+    labelTrail,
     type,
     options,
     placeholder,
     description,
+    tagSuggestions = [],
 }: {
     form: UseFormReturn<T>,
     name: Path<T>,
     label?: string,
+    labelTrail?: React.ReactNode,
     type?: string,
     options?: { value: string, label: string }[],
     placeholder?: string,
     description?: string,
+    tagSuggestions?: string[],
 }) {
     return (
         <FormField
@@ -34,7 +39,7 @@ export function FormInput<T extends FieldValues>({
                 <FormItem>
                     {
                         label ? (
-                            <FormLabel>{label}</FormLabel>
+                            <FormLabel>{label} {labelTrail}</FormLabel>
                         ) : <></>
                     }
                     <FormControl>
@@ -53,9 +58,19 @@ export function FormInput<T extends FieldValues>({
                                         onValueChange={field.onChange}
                                     />
                                 ) : (
-                                    <Input
-                                        placeholder={placeholder ?? ""}
-                                        {...field} />
+                                    type === "tags" ? (
+                                        <TagInput
+                                            placeholder={placeholder ?? ""}
+                                            // {...field}
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                            tagSuggestions={tagSuggestions}
+                                        />
+                                    ) : (
+                                        <Input
+                                            placeholder={placeholder ?? ""}
+                                            {...field} />
+                                    )
                                 )
                             )
                         }

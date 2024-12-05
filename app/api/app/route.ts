@@ -8,6 +8,7 @@ export const POST = async (req: NextRequest) => {
     const {
         name,
         description,
+        tags,
         slug,
         screenId,
         isPublished } = await req.json();
@@ -38,6 +39,7 @@ export const POST = async (req: NextRequest) => {
         data: {
             name,
             description,
+            tags,
             slug,
             screenId,
             isPublished,

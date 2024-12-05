@@ -11,11 +11,14 @@ import { InputType } from 'zlib';
 
 interface FieldConfig {
     label: string,
+    labelTrail?: React.ReactNode,
     type?: string,
     options?: { value: string, label: string }[],
     placeholder?: string,
     defaultValue?: string | number | undefined,
     validation: z.ZodSchema,
+    render?: () => React.ReactNode,
+    tagSuggestions?: string[],
 }
 
 export function Form<T extends { [K: string]: FieldConfig }>({
@@ -50,14 +53,18 @@ export function Form<T extends { [K: string]: FieldConfig }>({
         <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
                 {Object.keys(formSchema.shape).map((field) => (
-                    <FormInput
-                        key={field}
-                        label={fields[field].label}
-                        placeholder={fields[field].placeholder}
-                        name={field as any}
-                        type={(fields[field].type ?? "input")}
-                        options={fields[field].options}
-                        form={form} />
+                    fields[field].type === "custom" && fields[field].render
+                        ? <div key={field}>{fields[field].render()}</div>
+                        : <FormInput
+                            key={field}
+                            label={fields[field].label}
+                            labelTrail={fields[field].labelTrail}
+                            placeholder={fields[field].placeholder}
+                            name={field as any}
+                            type={(fields[field].type ?? "input")}
+                            options={fields[field].options}
+                            tagSuggestions={fields[field].tagSuggestions}
+                            form={form} />
                 ))}
                 <div className="flex items-center pt-2">
                     <Button className={additionalCTAElement ? "" : "flex-grow"} type="submit">{submitLabel ?? "Submit"}</Button>

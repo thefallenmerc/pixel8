@@ -14,13 +14,14 @@ import { toast, useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AppType, AppTypeArray } from '@/types/app.type';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { z } from "zod";
 import { ScreenTypeArray } from '@/types/screen.type';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { FormInput } from '@/client/components/ui/form/form-input';
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 
 const filterSensitive = false;
 
@@ -39,8 +40,20 @@ export function MyAppListClientComponent({
     const [apps, setApp] = useState(appsProp);
 
     const [selectedApp, setSelectedApp] = useState<AppType>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
     const [isScreenSelectorVisible, setIsScreenSelectorVisible] = useState(false);
     const [isQuickSelectorVisible, setIsQuickScreenSelectorVisible] = useState(false);
+
+    const allTags = useMemo(() => {
+        return [
+            ...Array.from(new Set(apps.flatMap(a => a.tags?.split(",")).filter(t => t))),
+            ...Array.from(new Set(screens.flatMap(s => s.tags?.split(",")).filter(t => t)))
+        ] as string[];
+    }, [screens, apps]);
+
+    const updateApp = (updatedApp: AppType) => {
+        setApp(apps.map(app => app.id === updatedApp?.id ? updatedApp : app));
+    }
 
     const changeScreen = async (screenId: string, unselectSelectedApp = false) => {
         if (selectedApp) {
@@ -70,7 +83,7 @@ export function MyAppListClientComponent({
             if (updatedApp.createdAt) {
                 updatedApp.createdAt = new Date(updatedApp.createdAt);
             }
-            setApp(apps.map(app => app.id === updatedApp.id ? updatedApp : app));
+            updateApp(updatedApp);
             if (unselectSelectedApp) {
                 setSelectedApp(null)
             } else {
@@ -118,7 +131,20 @@ export function MyAppListClientComponent({
                             imgUrl={"/sample-image.jpg"}
                         />
                     }>
-                    <CreateAppForm className="px-4" />
+                    <CreateAppForm
+                        className="px-4"
+                        setSelectedApp={setSelectedApp}
+                        isScreenSelectorVisible={isScreenSelectorVisible}
+                        showScreenSelector={() => {
+                            setIsScreenSelectorVisible(true);
+                        }}
+                        hideScreenSelector={() => {
+                            setIsScreenSelectorVisible(false);
+                        }}
+                        screens={screens}
+                        changeScreen={changeScreen}
+                        allTags={allTags}
+                        updateApp={updateApp} />
                 </DrawerDialog>
             </div>
 
@@ -134,7 +160,9 @@ export function MyAppListClientComponent({
                 }}
                 isScreenSelectorVisible={isScreenSelectorVisible}
                 screens={screens}
-                changeScreen={changeScreen} />
+                changeScreen={changeScreen}
+                allTags={allTags}
+                updateApp={updateApp} />
 
             {/* screen selector modal */}
             <ScreenSelectorModal
@@ -159,6 +187,8 @@ function AppDetails({
     hideScreenSelector,
     screens,
     changeScreen,
+    allTags,
+    updateApp,
 }: {
     selectedApp: AppType,
     setSelectedApp: any,
@@ -167,6 +197,8 @@ function AppDetails({
     hideScreenSelector: any,
     screens: ScreenTypeArray,
     changeScreen: any,
+    allTags: string[],
+    updateApp: any,
 }) {
 
     const selectedScreenName = selectedApp?.screen?.name;
@@ -188,7 +220,7 @@ function AppDetails({
                 <SheetHeader>
                     <SheetTitle>
                         {
-                            isScreenSelectorVisible ? "Select Screen" : `Details - ${selectedApp?.name}`
+                            isScreenSelectorVisible ? "Select Screen" : selectedApp?.name
                         }
                     </SheetTitle>
                     {
@@ -206,67 +238,16 @@ function AppDetails({
                             changeScreen={changeScreen}
                             selectedApp={selectedApp} />
                     ) : (
-
-                        <div className="grid gap-4 py-4">
-
-                            {/* slug */}
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">
-                                    Slug
-                                </Label>
-                                <Link
-                                    className="text-blue-500 underline col-span-3"
-                                    href={`/app/${selectedApp?.slug}`}
-                                    target='_blank'>
-                                    {selectedApp?.slug}
-                                </Link>
-                            </div>
-
-                            {/* tags */}
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">
-                                    Tags
-                                </Label>
-                                <div className="col-span-3 flex gap-2">
-                                    {
-                                        selectedApp?.tags?.split(",").map((tag) => {
-                                            return <div className="text-slate-500 bg-slate-50 px-2 py-1 rounded text-xs">{tag}</div>
-                                        }) ?? <div className="text-xs text-slate-500">No tags</div>
-                                    }
-                                </div>
-                            </div>
-
-                            {/* screen */}
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">
-                                    Screen
-                                </Label>
-                                <div
-                                    className="col-span-3 flex items-center gap-2 max-w-full text-xs text-blue-400 cursor-pointer"
-                                    onClick={showScreenSelector}>
-                                    <div className="flex-1 truncate">
-                                        {selectedScreenName ?? "Select screen"}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* slug */}
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">
-                                    Created
-                                </Label>
-                                <div className="text-slate-500 col-span-3">{selectedApp?.createdAt.toDateString() ?? "-"}</div>
-                            </div>
-
-                            {/* slug */}
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label className="text-right">
-                                    Updated
-                                </Label>
-                                <div className="text-slate-500 col-span-3">{selectedApp?.createdAt.toDateString() ?? "-"}</div>
-                            </div>
-
-                        </div>
+                        <CreateAppForm
+                            selectedApp={selectedApp}
+                            setSelectedApp={setSelectedApp}
+                            showScreenSelector={showScreenSelector}
+                            hideScreenSelector={hideScreenSelector}
+                            isScreenSelectorVisible={isScreenSelectorVisible}
+                            screens={screens}
+                            changeScreen={changeScreen}
+                            allTags={allTags}
+                            updateApp={updateApp} />
                     )
                 }
             </SheetContent>
@@ -275,49 +256,160 @@ function AppDetails({
 }
 
 
-const formFields = {
-    name: {
-        label: "Name",
-        placeholder: "App name",
-        defaultValue: "",
-        validation: z.string().min(2).max(50),
-    },
-    description: {
-        label: "Description",
-        placeholder: "App description",
-        defaultValue: "",
-        type: "textarea",
-        validation: z.string().min(2).max(250),
-    },
-    slug: {
-        label: "App Slug",
-        placeholder: "App Slug",
-        defaultValue: "",
-        validation: z.string().min(2).max(50),
-    },
-};
-
 function CreateAppForm({
     className,
+    selectedApp,
+    setSelectedApp,
+    isScreenSelectorVisible,
+    showScreenSelector,
+    hideScreenSelector,
+    screens,
+    changeScreen,
+    allTags,
+    updateApp,
 }: {
     className?: string,
+    selectedApp?: AppType,
+    setSelectedApp: any,
+    isScreenSelectorVisible: boolean | undefined,
+    showScreenSelector: any,
+    hideScreenSelector: any,
+    screens: ScreenTypeArray,
+    changeScreen: any,
+    allTags?: string[],
+    updateApp: any,
 }) {
 
     const { toast } = useToast();
 
+    const formFields = useMemo(() => ({
+        name: {
+            label: "Name",
+            placeholder: "App name",
+            defaultValue: selectedApp?.name ?? "",
+            validation: z.string().min(2).max(50),
+        },
+        tags: {
+            label: "Tags",
+            placeholder: "Tags",
+            defaultValue: selectedApp?.tags ?? "",
+            validation: z.string(),
+            type: "tags",
+            tagSuggestions: allTags,
+        },
+        description: {
+            label: "Description",
+            placeholder: "App description",
+            defaultValue: selectedApp?.description ?? "",
+            type: "textarea",
+            validation: z.string().min(2).max(250),
+        },
+        ...(selectedApp ? {
+            screen: {
+                label: "Custom",
+                type: "custom",
+                validation: z.string(),
+                render: () => (
+                    <div className="flex items-center gap-4 pt-2">
+                        <Label>Screen</Label>
+                        <div
+                            className="col-span-3 flex items-center gap-2 max-w-full text-blue-400 cursor-pointer truncate text-xs"
+                            onClick={showScreenSelector}>
+                            <div className="flex-1 truncate">
+                                {selectedApp?.screen?.name ?? "Select screen"}
+                            </div>
+                        </div>
+                    </div>
+                )
+            },
+        } : {}),
+        slug: {
+            label: "App Slug",
+            labelTrail: selectedApp && (
+                <Link
+                    className="text-blue-400 ml-2"
+                    href={`/app/${selectedApp?.slug}`}
+                    target='_blank'>
+                    <ExternalLink className="inline" size={16} />
+                </Link>
+            ),
+            placeholder: "App Slug",
+            defaultValue: selectedApp?.slug ?? "",
+            validation: z.string().min(2).max(50),
+        },
+        ...(selectedApp ? {
+            createdAt: {
+                label: "Created At",
+                type: "custom",
+                validation: z.string(),
+                render: () => (
+                    <div className="flex items-center gap-4 pt-2">
+                        <Label>Created</Label>
+                        <div className="text-slate-500 col-span-3">{selectedApp?.createdAt.toDateString() ?? "-"}</div>
+                    </div>
+                )
+            },
+            updatedAt: {
+                label: "Updated At",
+                type: "custom",
+                validation: z.string(),
+                render: () => (
+                    <div className="flex items-center gap-4 py-2">
+                        <Label>Updated</Label>
+                        <div className="text-slate-500 col-span-3">{selectedApp?.createdAt.toDateString() ?? "-"}</div>
+                    </div>
+                )
+            },
+        } : {})
+    }), [selectedApp])
+
     const formSchema = getFormSchemaFromFields(formFields);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        const { name, description, slug } = values;
-
+        const { name, tags, description, slug } = values;
+        // return console.log("vaslues", values);
         // const token = localStorage.get('token');
+        if (selectedApp) {
+            const response = await fetch(`/api/app/${selectedApp.id}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name,
+                    tags,
+                    description,
+                    slug
+                }),
+            });
+
+            if (response.status !== 200) {
+                const result = await response.json() as any;
+                toast({
+                    title: result.message,
+                    variant: "destructive",
+                });
+            } else {
+                toast({
+                    title: "App updated",
+                });
+            }
+            const updatedApp = await response.json();
+            if (updatedApp.createdAt) {
+                updatedApp.createdAt = new Date(updatedApp.createdAt);
+            }
+            updateApp(updatedApp);
+            setSelectedApp(null);
+            return;
+        }
 
         const response = await fetch("/api/app", {
             method: "POST",
             body: JSON.stringify({
                 name,
                 description,
-                slug
+                slug,
+                tags,
             }),
             // headers: {
             //     authorization: `Bearer ${token}`,
@@ -342,7 +434,7 @@ function CreateAppForm({
             <Form
                 fields={formFields}
                 onSubmit={onSubmit}
-                submitLabel="Add App" />
+                submitLabel={selectedApp ? "Update App" : "Add App"} />
         </div>
     );
 }
