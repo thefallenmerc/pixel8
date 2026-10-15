@@ -1,0 +1,282 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+model User {
+  id String @id
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  accounts Account[]
+  apps App[]
+  @@map("user")
+}
+model Session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("session")
+}
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  @@map("account")
+}
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+model RateLimit {
+  id String @id
+  key String @unique
+  count Int
+  lastRequest BigInt
+  @@map("rateLimit")
+}
+model App {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name String
+  description String?
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  assets Asset[]
+  campaigns Campaign[]
+  screens Screen[]
+  @@index([ownerId])
+}
+model Asset {
+  id String @id @default(uuid()) @db.Uuid
+  appId String @db.Uuid
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  name String
+  mimeType String
+  sizeBytes BigInt
+  status String @default("uploading")
+  sourceKey String? @unique
+  sourceSha256 String?
+  thumbnailKey String?
+  width Int?
+  height Int?
+  error String?
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  upload Upload?
+  campaignItems CampaignItem[]
+  renditions Rendition[]
+  @@index([appId, status])
+}
+model Upload {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @unique @db.Uuid
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  objectKey String @unique
+  multipartId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+model Campaign {
+  id String @id @default(uuid()) @db.Uuid
+  appId String @db.Uuid
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  name String
+  description String?
+  revision Int @default(1)
+  currentRevision Int?
+  status String @default("preparing")
+  error String?
+  createdAt DateTime @default(now())
+  revisions CampaignRevision[]
+  screens Screen[]
+  @@index([appId])
+}
+model CampaignRevision {
+  id String @id @default(uuid()) @db.Uuid
+  campaignId String @db.Uuid
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  revision Int
+  status String @default("preparing")
+  error String?
+  createdAt DateTime @default(now())
+  items CampaignItem[]
+  @@unique([campaignId, revision])
+}
+model CampaignItem {
+  id String @id @default(uuid()) @db.Uuid
+  revisionId String @db.Uuid
+  revision CampaignRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  assetId String @db.Uuid
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  ordinal Int
+  durationSeconds Int
+  fit String
+  variants CampaignItemVariant[]
+  @@unique([revisionId, ordinal])
+  @@index([assetId])
+}
+model Rendition {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  profile String
+  cacheKey String @unique
+  fit String
+  durationSeconds Float
+  orientation Int
+  objectKey String @unique
+  sha256 String
+  sizeBytes BigInt
+  mimeType String @default("video/mp4")
+  width Int
+  height Int
+  createdAt DateTime @default(now())
+  campaignItems CampaignItemVariant[]
+}
+model CampaignItemVariant {
+  id String @id @default(uuid()) @db.Uuid
+  itemId String @db.Uuid
+  item CampaignItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  renditionId String @db.Uuid
+  rendition Rendition @relation(fields: [renditionId], references: [id], onDelete: Cascade)
+  profile String
+  orientation Int
+  @@unique([itemId, profile, orientation])
+}
+model Screen {
+  id String @id @default(uuid()) @db.Uuid
+  ownerId String
+  appId String? @db.Uuid
+  app App? @relation(fields: [appId], references: [id], onDelete: SetNull)
+  name String
+  campaignId String? @db.Uuid
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  orientation Int @default(0)
+  muted Boolean @default(true)
+  volume Int @default(50)
+  desiredVersion Int @default(1)
+  playingVersion Int?
+  status String @default("offline")
+  lastSeenAt DateTime?
+  error String?
+  deviceTokenHash String? @unique
+  deviceTokenCiphertext String?
+  deviceId String?
+  capabilities Json?
+  createdAt DateTime @default(now())
+  telemetry Telemetry[]
+  telemetryAggregates TelemetryAggregate[]
+  pairing Pairing?
+  manifests ManifestRecord[]
+  desiredStates DesiredState[]
+  @@index([ownerId])
+  @@index([campaignId])
+}
+model Pairing {
+  id String @id @default(uuid()) @db.Uuid
+  deviceId String
+  codeHash String @unique
+  pollTokenHash String
+  capabilities Json
+  expiresAt DateTime
+  claimedAt DateTime?
+  screenId String? @unique @db.Uuid
+  screen Screen? @relation(fields: [screenId], references: [id], onDelete: SetNull)
+  encryptedDeviceToken String?
+  createdAt DateTime @default(now())
+}
+model Telemetry {
+  id String @id @default(uuid()) @db.Uuid
+  screenId String @db.Uuid
+  screen Screen @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  sampledAt DateTime
+  payload Json
+  dedupeKey String
+  @@unique([screenId, dedupeKey])
+  @@index([screenId, sampledAt])
+}
+model TelemetryAggregate {
+  id String @id @default(uuid()) @db.Uuid
+  screenId String @db.Uuid
+  screen Screen @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  hour DateTime
+  sampleCount Int
+  cpuAverage Float
+  cpuMaximum Float
+  memoryAverageBytes BigInt
+  memoryMaximumBytes BigInt
+  temperatureSampleCount Int @default(0)
+  temperatureAverageC Float?
+  throttledSamples Int
+  droppedFramesMaximum Int
+  createdAt DateTime @default(now())
+  @@unique([screenId, hour])
+  @@index([screenId, hour])
+}
+model ManifestRecord {
+  id String @id @default(uuid()) @db.Uuid
+  screenId String @db.Uuid
+  screen Screen @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  version Int
+  body Json
+  createdAt DateTime @default(now())
+  @@unique([screenId, version])
+  @@index([screenId, createdAt])
+}
+model DesiredState {
+  id String @id @default(uuid()) @db.Uuid
+  screenId String @db.Uuid
+  screen Screen @relation(fields: [screenId], references: [id], onDelete: Cascade)
+  version Int
+  campaignId String? @db.Uuid
+  campaignRevision Int?
+  orientation Int
+  muted Boolean
+  volume Int
+  createdAt DateTime @default(now())
+  @@unique([screenId, version])
+}
+model Job {
+  id String @id @default(uuid()) @db.Uuid
+  type String
+  payload Json
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+  attempts Int @default(0)
+  error String?
+  @@index([processedAt, createdAt])
+}

@@ -1,0 +1,73 @@
+services:
+  - type: web
+    name: pixel8-api
+    runtime: docker
+    dockerfilePath: ./services/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /ready
+    preDeployCommand: pnpm --filter @pixel8/database db:migrate
+    envVars:
+      - fromGroup: pixel8-shared
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pixel8-db
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      - key: API_BASE_URL
+        sync: false
+      - key: TRUSTED_ORIGINS
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+  - type: worker
+    name: pixel8-worker
+    runtime: docker
+    dockerfilePath: ./services/worker/Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: pixel8-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pixel8-db
+          property: connectionString
+  - type: web
+    name: pixel8-dashboard
+    runtime: docker
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: PORT
+        value: "3000"
+databases:
+  - name: pixel8-db
+    databaseName: pixel8
+    user: pixel8
+    postgresMajorVersion: "17"
+envVarGroups:
+  - name: pixel8-shared
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_REGION
+        value: auto
+      - key: S3_FORCE_PATH_STYLE
+        value: "false"
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MAX_UPLOAD_BYTES
+        value: "1073741824"

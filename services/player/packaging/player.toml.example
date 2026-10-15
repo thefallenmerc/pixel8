@@ -1,0 +1,4 @@
+api_base_url = "https://pixel8.example.com"
+cache_dir = "/var/lib/pixel8/cache"
+cache_quota_bytes = 4294967296
+audio_device = "hw:0,0"

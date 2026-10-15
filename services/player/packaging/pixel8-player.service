@@ -1,0 +1,24 @@
+[Unit]
+Description=Pixel8 digital signage player
+After=local-fs.target network.target
+
+[Service]
+Type=simple
+User=pixel8
+Group=pixel8
+SupplementaryGroups=video render audio
+ExecStart=/usr/bin/pixel8-player --config /etc/pixel8/player.toml
+Restart=always
+RestartSec=3
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=20
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pixel8 /etc/pixel8
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+Package: pixel8-player
+Version: 0.1.0
+Section: video
+Priority: optional
+Architecture: arm64
+Maintainer: Pixel8 <support@pixel8.local>
+Depends: systemd, libgstreamer1.0-0 (>= 1.22), gstreamer1.0-plugins-base (>= 1.22), gstreamer1.0-plugins-good (>= 1.22), gstreamer1.0-plugins-bad (>= 1.22), gstreamer1.0-alsa (>= 1.22)
+Description: Native Raspberry Pi signage player
+ Offline-first H.264 signage player using persistent GStreamer playbin3,
+ DRM KMS video output, ALSA audio output and Raspberry Pi V4L2 decoding.

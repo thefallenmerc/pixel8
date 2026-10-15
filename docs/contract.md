@@ -1,0 +1,25 @@
+# Pixel8 protocol v1
+
+All JSON uses camelCase, UUID IDs, ISO8601 timestamps, integer versions. Lists return `{items:[]}`; individual objects are returned directly. Errors: `{error:{code,message,details?}}`. Use 401 for missing auth, ownership-safe 404, 409 revision conflict, 422 invalid media, 429 throttling. Human auth is Better Auth `/api/auth/*` email OTP; bearer plugin for mobile; HTTP-only cookies for browser.
+
+## Owner APIs
+
+- GET/POST `/v1/apps`; GET/PATCH/DELETE `/v1/apps/:id`. App `{id,name,description,createdAt}`.
+- GET `/v1/apps/:appId/assets`; DELETE `/v1/assets/:id`. Asset `{id,appId,name,mimeType,sizeBytes,status:uploading|processing|ready|failed,thumbnailUrl?,error?}`. Reject asset deletion while referenced.
+- GET/POST `/v1/apps/:appId/campaigns`; GET/PUT/DELETE `/v1/campaigns/:id`. Campaign `{id,appId,name,description,revision,currentRevision?,status:preparing|ready|failed,items:[{assetId,durationSeconds,fit:contain|cover}],error?}`. Creation uses `{name,description,items:[]}`. PUT `{name,description,expectedRevision,items}` increments immutable candidate revision transactionally. Empty items valid. DELETE `{unassignScreens:true}` required if assigned; atomically unassign.
+- POST `/v1/apps/:appId/uploads` `{name,mimeType,sizeBytes}` -> `{asset,uploadId,partSizeBytes}`. POST `/v1/uploads/:uploadId/parts` `{partNumbers:[1]}` -> `{parts:[{partNumber,url}],expiresAt}`. POST `/v1/uploads/:uploadId/complete` `{parts:[{partNumber,etag}]}` -> Asset. DELETE `/v1/uploads/:uploadId` aborts. Enforce owner and verified object size/type.
+- GET `/v1/screens`; GET `/v1/screens/:id`; POST `/v1/screens/pair` `{code,name}` -> Screen; PATCH `/v1/screens/:id` `{expectedDesiredVersion,name?,campaignId?:string|null,orientation?:0|90|180|270,muted?:boolean,volume?:0..100}` -> Screen; DELETE revokes credential. Screen `{id,name,campaignId:null|string,orientation,muted,volume,desiredVersion,playingVersion:null|number,status:offline|preparing|ready|downloading|playing|error,lastSeenAt?,error?,capabilities?,latestTelemetry?}`. GET `/v1/screens/:id/telemetry?hours=24` -> `{items:[]}`.
+
+## Device APIs
+
+- POST `/v1/device/pairing` `{deviceId,capabilities}` -> `{pairingId,code,pollToken,expiresAt}`. POST `/v1/device/pairing/:pairingId/poll` `{pollToken}` -> `{status:pending|claimed|expired,deviceToken?,screenId?}`. One-time owner claim; poll secret required. Hash tokens at rest; retry delivery securely until first authenticated device request confirms receipt.
+- Device bearer ONLY `/v1/device/*`: PUT `/capabilities` with Capabilities; GET `/manifest` -> Manifest or 204 while first campaign prepares; POST `/downloads` `{renditionIds:[]}` -> `{downloads:[{renditionId,url,expiresAt}]}` for authorized current/previous manifest entries only.
+- POST `/v1/device/ack` `{version,status:downloading|playing|idle|error,currentItemId?,error?}`. Playing ack only after a nonempty playlist starts successfully. Idle ack only after an empty manifest is durably applied and the renderer is intentionally stopped; it records the applied version in `playingVersion` and reports screen status `ready`, never `playing`. Reject unknown/future versions and never regress playing state on stale ack. Persist local activation before acknowledging; retry lost acknowledgements without restarting playback.
+- POST `/v1/device/telemetry` `{samples:[{sampledAt,cpuPercent,memoryUsedBytes,memoryTotalBytes,temperatureC?,throttled,diskFreeBytes,cacheBytes,currentItemId?,desiredVersion,playingVersion?,droppedFrames,softwareVersion,displayMode,decoder,error?}]}`. Bound batch, dedupe samples.
+- WS `/v1/device/events` bearer header sends `{type:desired-state,version}` hints. Authoritative HTTP reconcile startup/reconnect/every30s.
+- Capabilities `{displayModes:[{width,height,refreshHz}],selectedMode:{width,height,refreshHz},decoders:[string],supports1080p:false,softwareVersion}`.
+- Manifest `{schemaVersion:1,screenId,version,profile:720p30-v1|1080p30-v1,orientation,muted,volume,items:[{id,assetId,renditionId,sha256,sizeBytes,durationMs}]}`. Empty manifests explicitly idle. Stable manifest identity excludes expiring URLs.
+
+## Invariants
+
+Screen version is independent from campaign revision and advances on assignment/settings/publication. Only latest candidate processing may publish. Previous ready content continues while newer candidate prepares/fails. Use transactional jobs and PG NOTIFY hints; each API LISTEN connection broadcasts only authorized local sockets and reconciles after reconnect. Screen names never authenticate. Private media needs renewable scoped grants. Screen owner must own assigned campaign and all assets must belong to campaign app. Content transforms include physical scanout, logical orientation, fit, duration, source hash and profile version. Default 720p30; 1080 requires explicit qualified capabilities. Renders H264/yuv420p/CFR30/AAC48k stereo including silence. Static images encoded as duration clips. No legacy migration, scheduler, team roles, multizone, synchronized wall or OTA.

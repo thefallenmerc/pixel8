@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+getent group pixel8 >/dev/null || addgroup --system pixel8
+id pixel8 >/dev/null 2>&1 || adduser --system --ingroup pixel8 --home /var/lib/pixel8 --no-create-home --disabled-login pixel8
+for group in video render audio; do
+  getent group "$group" >/dev/null && adduser pixel8 "$group" || true
+done
+install -d -o pixel8 -g pixel8 -m 0750 /var/lib/pixel8/cache
+install -d -o root -g pixel8 -m 0770 /etc/pixel8
+if [ ! -e /etc/pixel8/player.toml ]; then
+  /usr/bin/pixel8-player --config /etc/pixel8/player.toml init-config
+  chown pixel8:pixel8 /etc/pixel8/player.toml
+  chmod 0600 /etc/pixel8/player.toml
+fi
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload
+  systemctl enable pixel8-player.service
+fi
+exit 0

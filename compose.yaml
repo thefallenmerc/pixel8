@@ -1,0 +1,30 @@
+name: pixel8-dev
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pixel8
+      POSTGRES_USER: pixel8
+      POSTGRES_PASSWORD: pixel8_dev
+    ports: ["127.0.0.1:54328:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pixel8 -d pixel8"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  storage:
+    image: localstack/localstack:4.9
+    environment:
+      SERVICES: s3
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    ports: ["127.0.0.1:19000:4566"]
+    volumes:
+      - ./scripts/local-storage-init.sh:/etc/localstack/init/ready.d/pixel8.sh:ro
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["127.0.0.1:18025:8025", "127.0.0.1:11025:1025"]
+volumes:
+  postgres-data:
